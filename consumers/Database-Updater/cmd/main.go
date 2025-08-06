@@ -48,7 +48,7 @@ func worker(id int, jobs <-chan kafka.Message, db *sql.DB, wg *sync.WaitGroup) {
 
 func main() {
 	// ---------------- Kafka Config ----------------
-	kafkaBroker := "kafka:9092" // use localhost:9092 if running outside docker
+	kafkaBroker := "localhost:9092" // use localhost:9092 if running outside docker
 	topic := "cache_access_logs"
 	groupID := "db-updater-group"
 
@@ -62,7 +62,7 @@ func main() {
 	log.Println("✅ Connected to Kafka, waiting for messages...")
 
 	// ---------------- DB Config ----------------
-	dbHost := "timescaledb" // use localhost if running locally
+	dbHost := "localhost" // use localhost if running locally
 	dbPort := 5432
 	dbUser := "smartcache"
 	dbPass := "smartcache123"
