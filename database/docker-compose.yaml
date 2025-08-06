@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.14.2-pg15
+    container_name: timescaledb
+    environment:
+      POSTGRES_USER: smartcache
+      POSTGRES_PASSWORD: smartcache123
+      POSTGRES_DB: smartcache
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    networks:
+      - smartcache-net
+
+volumes:
+  timescale_data:
+
+networks:
+  smartcache-net:
+    external: true
