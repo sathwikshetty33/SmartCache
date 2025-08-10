@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	host := "localhost" // use "localhost" if running from host
+	host := "timescaledb" // use "localhost" if running from host
 	port := 5432
 	user := "smartcache"
 	password := "smartcache123"

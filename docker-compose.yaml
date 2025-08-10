@@ -1,0 +1,88 @@
+version: '3.8'
+
+networks:
+  smartcache-net:
+    driver: bridge
+
+volumes:
+  timescale_data:
+
+services:
+  # ------------------ Gateway (Public) ------------------
+  gateway:
+    build: ./gateway/api-gateway
+    ports:
+      - "8080:8080" # Only this is exposed outside
+    environment:
+      - REDIS_INTERNAL_HOST=internal-redis:6379
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      - internal-redis
+      - kafka
+      - timescaledb
+    networks:
+      - smartcache-net
+
+  # ------------------ Internal Redis ------------------
+  internal-redis:
+    image: redis:7
+    networks:
+      - smartcache-net
+
+  # ------------------ Zookeeper ------------------
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - smartcache-net
+
+  # ------------------ Kafka ------------------
+  kafka:
+    image: bitnami/kafka:3.6
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+
+    depends_on:
+      - zookeeper
+    networks:
+      - smartcache-net
+
+  # ------------------ TimescaleDB ------------------
+  timescaledb:
+    image: timescale/timescaledb:2.14.2-pg15
+    environment:
+      POSTGRES_USER: smartcache
+      POSTGRES_PASSWORD: smartcache123
+      POSTGRES_DB: smartcache
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    networks:
+      - smartcache-net
+
+  # ------------------ Database-Updater (Go Service) ------------------
+  db-updater:
+    build:
+      context: ./consumers/Database-Updater
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - timescaledb
+    networks:
+      - smartcache-net
+
+  # ------------------ DB Migrator (Runs migrations after DB is ready) ------------------
+  db-migrator:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    depends_on:
+      - timescaledb
+    networks:
+      - smartcache-net
+    restart: "on-failure"
